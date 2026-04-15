@@ -132,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = true;
 
             try {
-                // Reset error state
                 window.lastErrorStatus = null;
                 window.lastErrorMessage = '';
 
@@ -143,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (token && token.trim()) {
                     const cloudData = await fetchFromCloud(token.trim());
                     if (cloudData === null) {
-                        // Critical error during fetch
                         const errInfo = window.lastErrorStatus ? `(에러: ${window.lastErrorStatus} - ${window.lastErrorMessage})` : '';
                         alert(`클라우드 정보를 불러오지 못해 자동 저장을 중단합니다.\n${errInfo}`);
                         return;
@@ -160,18 +158,79 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!success) {
                         alert(`로컬에는 저장되었으나 클라우드 동기화에 실패했습니다.\n(${window.lastErrorStatus}: ${window.lastErrorMessage})`);
                     } else {
-                        alert('프로젝트가 로컬 및 클라우드에 성공적으로 저장되었습니다.');
+                        alert('프로젝트가 로컬 및 클라우드에 성공적으로 저장되었습니다!');
                     }
                 } else {
                     alert('프로젝트가 로컬에 저장되었습니다.');
                 }
+            } catch (e) {
+                console.error('Save Error:', e);
+                alert('저장 중 오류가 발생했습니다: ' + e.message);
             } finally {
-                btn.innerHTML = '저장';
+                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 저장/수정';
                 btn.disabled = false;
                 updateProjectDropdown();
+                document.getElementById('projectSelect').value = pName;
+            }
+        });
+
+        document.getElementById('deleteProjectBtn').addEventListener('click', async () => {
+            const pName = document.getElementById('projectSelect').value;
+            if (!pName) return alert('삭제할 프로젝트를 불러오기 목록에서 선택해주세요.');
+            if (confirm(`정말 '${pName}' 프로젝트를 영구 삭제하시겠습니까?`)) {
+                const token = localStorage.getItem('abar_github_token');
+                let projs = getProjects();
+                let currentSha = null;
+
+                if (token && token.trim()) {
+                    const cloudData = await fetchFromCloud(token.trim());
+                    if (cloudData) {
+                        currentSha = cloudData.sha;
+                    }
+                }
+
+                if (projs[pName]) delete projs[pName];
+                saveProjects(projs);
+                updateProjectDropdown();
+                document.getElementById('projectName').value = '';
+
+                if (token && token.trim()) {
+                    const btn = document.getElementById('deleteProjectBtn');
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    await syncToCloud(projs, token.trim(), currentSha);
+                    btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                }
+            }
+        });
+
+        document.getElementById('projectSelect').addEventListener('change', (e) => {
+            const pName = e.target.value;
+            if (!pName) return;
+            const projs = getProjects();
+            if (projs[pName]) {
+                state = JSON.parse(JSON.stringify(projs[pName]));
+                document.getElementById('projectName').value = pName;
+                refreshUI();
+            }
+        });
+
+        document.getElementById('shareProjectBtn')?.addEventListener('click', () => {
+            try {
+                const dataStr = JSON.stringify(state);
+                const base64Data = btoa(unescape(encodeURIComponent(dataStr)));
+                const url = window.location.origin + window.location.pathname + '?p=' + encodeURIComponent(base64Data);
+
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('현재 화면의 통합 설정이 고유 링크로 복사되었습니다!\nPC/모바일 메신저 등 어디든 붙여넣기 하시면 같은 화면이 열립니다.');
+                }).catch(err => {
+                    prompt('아래 링크를 전체 복사하여 다른 기기로 전달해주세요:', url);
+                });
+            } catch (e) {
+                alert('데이터가 너무 커서 링크를 생성할 수 없습니다.');
             }
         });
     }
+
 
     function init() {
         fetchPublicData();
@@ -656,122 +715,13 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    function getProjects() { return JSON.parse(localStorage.getItem('abar_projects')) || {}; }
-    function saveProjects(projs) { localStorage.setItem('abar_projects', JSON.stringify(projs)); }
-
-    function initProjectManager() {
-        updateProjectDropdown();
-        document.getElementById('saveProjectBtn').addEventListener('click', async () => {
-            const pName = document.getElementById('projectName').value.trim();
-            if (!pName) return alert('저장할 프로젝트명을 입력해주세요.');
-
-            const btn = document.getElementById('saveProjectBtn');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
-            btn.disabled = true;
-
-            try {
-                const token = localStorage.getItem('abar_github_token');
-                let currentSha = null;
-                let projs = getProjects();
-
-                if (token && token.trim()) {
-                    const cloudData = await fetchFromCloud(token.trim());
-                    if (cloudData) {
-                        currentSha = cloudData.sha;
-                        if (cloudData.projs) projs = { ...cloudData.projs, ...projs };
-                    }
-                }
-
-                projs[pName] = JSON.parse(JSON.stringify(state));
-                saveProjects(projs);
-                updateProjectDropdown();
-                document.getElementById('projectSelect').value = pName;
-
-                if (token && token.trim()) {
-                    const success = await syncToCloud(projs, token.trim(), currentSha);
-                    if (success) {
-                        alert(`'${pName}' 데이터가 GitHub 저장소에 안전하게 기록되었습니다!`);
-                    } else {
-                        const errInfo = window.lastErrorStatus ? `(에러: ${window.lastErrorStatus} - ${window.lastErrorMessage})` : '';
-                        alert(`'${pName}' 저장이 기기에만 이루어졌습니다.\n클라우드 동기화 실패 ${errInfo}`);
-                    }
-                } else {
-                    alert(`'${pName}' 프로젝트가 기기(로컬)에 저장되었습니다.\n(클라우드에 저장하려면 GitHub 토큰을 설정해주세요.)`);
-                }
-            } catch (e) {
-                console.error('Save Error:', e);
-                alert('저장 중 오류가 발생했습니다: ' + e.message);
-            } finally {
-                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 저장/수정';
-                btn.disabled = false;
-            }
-        });
-
-        document.getElementById('deleteProjectBtn').addEventListener('click', async () => {
-            const pName = document.getElementById('projectSelect').value;
-            if (!pName) return alert('삭제할 프로젝트를 불러오기 목록에서 선택해주세요.');
-            if (confirm(`정말 '${pName}' 프로젝트를 영구 삭제하시겠습니까?`)) {
-
-                const token = localStorage.getItem('abar_github_token');
-                let projs = getProjects();
-                let currentSha = null;
-
-                if (token) {
-                    const cloudData = await fetchFromCloud(token);
-                    if (cloudData) {
-                        currentSha = cloudData.sha;
-                        if (cloudData.projs) projs = { ...cloudData.projs, ...projs };
-                    }
-                }
-
-                if (projs[pName]) delete projs[pName];
-                saveProjects(projs);
-                updateProjectDropdown();
-                document.getElementById('projectName').value = '';
-
-                if (token) {
-                    const btn = document.getElementById('deleteProjectBtn');
-                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                    await syncToCloud(projs, token, currentSha);
-                    btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
-                }
-            }
-        });
-
-        document.getElementById('projectSelect').addEventListener('change', (e) => {
-            const pName = e.target.value;
-            if (!pName) return;
-            const projs = getProjects();
-            if (projs[pName]) {
-                state = JSON.parse(JSON.stringify(projs[pName]));
-                document.getElementById('projectName').value = pName;
-                refreshUI();
-            }
-        });
-
-        document.getElementById('shareProjectBtn')?.addEventListener('click', () => {
-            try {
-                const dataStr = JSON.stringify(state);
-                const base64Data = btoa(unescape(encodeURIComponent(dataStr)));
-                const url = window.location.origin + window.location.pathname + '?p=' + encodeURIComponent(base64Data);
-
-                navigator.clipboard.writeText(url).then(() => {
-                    alert('현재 화면의 통합 설정이 고유 링크로 복사되었습니다!\nPC/모바일 메신저 등 어디든 붙여넣기 하시면 같은 화면이 열립니다.');
-                }).catch(err => {
-                    prompt('아래 링크를 전체 복사하여 다른 기기로 전달해주세요:', url);
-                });
-            } catch (e) {
-                alert('데이터가 너무 커서 링크를 생성할 수 없습니다.');
-            }
-        });
-    }
-
     function updateProjectDropdown() {
         const select = document.getElementById('projectSelect');
         if (!select) return;
         const projs = getProjects();
         select.innerHTML = '<option value="">-- 내 프로젝트 --</option>' + Object.keys(projs).map(k => `<option value="${k}">${k}</option>`).join('');
     }
+
 
     function refreshUI() {
         const globals = ['baseCost', 'bundleCount', 'salePrice', 'packingFee', 'deliveryFeeGlobal', 'lossRate', 'extraCostPerBundle', 'extraCostPerItem', 'modelFeeFixed', 'modelPerOrder', 'modelFeeRate', 'returnRate', 'conversionRate'];
