@@ -171,9 +171,14 @@
                         </label>
                         <input type="number" id="actualInputValue2" value="0" class="input-trans" disabled>
                     </div>
-                    <div class="config-item">
-                        <label>적용 전환율 (%)</label>
-                        <input type="number" id="actualConvRate" class="input-trans">
+                    <div class="config-item blue">
+                        <label>적용 전환율 (1차 / 2차 %)</label>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="number" id="actualConvRate" class="input-trans" placeholder="1차"
+                                style="flex:1;">
+                            <input type="number" id="actualConvRate2" class="input-trans" placeholder="2차"
+                                style="flex:1;" disabled>
+                        </div>
                     </div>
                     <div class="config-item cyan">
                         <label>합산 예상 순 주문량</label>
