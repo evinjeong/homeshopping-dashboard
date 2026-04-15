@@ -209,24 +209,30 @@
     <!-- Templates -->
     <template id="channelRowTemplate">
         <tr class="channel-row">
-            <td><input type="text" class="cell-input-premium channel-name" style="width:100%;"></td>
+            <td><input type="text" class="cell-input-premium channel-name" style="width:100%; min-width:100px;"></td>
             <td>
-                <div class="fee-ui-cluster">
-                    <div style="margin-bottom:6px;">1: <input type="number" class="fixed-fee cell-input-premium"
-                            style="width:100px;">+<input type="number" class="comm-rate cell-input-premium"
-                            style="width:50px;">%</div>
-                    <div class="secondary-fee-ui" style="opacity:0.25;">2: <input type="number"
-                            class="fixed-fee-2 cell-input-premium" style="width:100px;">+<input type="number"
-                            class="comm-rate-2 cell-input-premium" style="width:50px;">%</div>
+                <div class="fee-ui-cluster" style="white-space: nowrap;">
+                    <div style="margin-bottom:6px; display:flex; align-items:center; gap:4px;">1: <input type="number"
+                            class="fixed-fee cell-input-premium" style="width:120px; min-width:120px;">+<input
+                            type="number" class="comm-rate cell-input-premium" style="width:60px; min-width:60px;">%
+                    </div>
+                    <div class="secondary-fee-ui" style="opacity:0.25; display:flex; align-items:center; gap:4px;">2:
+                        <input type="number" class="fixed-fee-2 cell-input-premium"
+                            style="width:120px; min-width:120px;">+<input type="number"
+                            class="comm-rate-2 cell-input-premium" style="width:60px; min-width:60px;">%</div>
                 </div>
             </td>
             <td><label class="switch"><input type="checkbox" class="one-plus-one-toggle"><span
                         class="slider round"></span></label></td>
-            <td><input type="number" class="delivery-fee cell-input-premium" style="width:70px;"></td>
+            <td><input type="number" class="delivery-fee cell-input-premium" style="width:90px; min-width:90px;"></td>
             <td>
-                <div class="target-cluster"><input type="number" class="target-revenue-1 cell-input-premium"
-                        style="width:110px;">/<input type="number" class="target-revenue-2 cell-input-premium"
-                        style="width:110px;" disabled></div>
+                <div class="target-cluster" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap;">
+                    <input type="number" class="target-revenue-1 cell-input-premium"
+                        style="width:135px; min-width:135px;">
+                    <span>/</span>
+                    <input type="number" class="target-revenue-2 cell-input-premium"
+                        style="width:135px; min-width:135px;" disabled>
+                </div>
             </td>
             <td><button class="btn-icon delete-btn"><i class="fa-solid fa-trash-can"></i></button></td>
         </tr>
