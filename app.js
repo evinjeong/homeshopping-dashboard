@@ -22,8 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchFromGithub(token) {
         try {
-            const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}`, {
-                headers: { 'Authorization': `token ${token}` }
+            const tempURL = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}?t=${Date.now()}`;
+            const res = await fetch(tempURL, {
+                headers: { 'Authorization': `token ${token}` },
+                cache: 'no-store'
             });
             if (!res.ok) return null;
             const data = await res.json();
