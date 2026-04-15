@@ -581,36 +581,41 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
             btn.disabled = true;
 
-            const token = localStorage.getItem('abar_github_token');
-            let currentSha = null;
-            let projs = getProjects();
+            try {
+                const token = localStorage.getItem('abar_github_token');
+                let currentSha = null;
+                let projs = getProjects();
 
-            if (token) {
-                const cloudData = await fetchFromCloud(token);
-                if (cloudData) {
-                    currentSha = cloudData.sha;
-                    if (cloudData.projs) projs = { ...cloudData.projs, ...projs };
+                if (token && token.trim()) {
+                    const cloudData = await fetchFromCloud(token.trim());
+                    if (cloudData) {
+                        currentSha = cloudData.sha;
+                        if (cloudData.projs) projs = { ...cloudData.projs, ...projs };
+                    }
                 }
-            }
 
-            projs[pName] = JSON.parse(JSON.stringify(state));
-            saveProjects(projs);
-            updateProjectDropdown();
-            document.getElementById('projectSelect').value = pName;
+                projs[pName] = JSON.parse(JSON.stringify(state));
+                saveProjects(projs);
+                updateProjectDropdown();
+                document.getElementById('projectSelect').value = pName;
 
-            if (token) {
-                const success = await syncToCloud(projs, token, currentSha);
-                if (success) {
-                    alert(`'${pName}' 데이터가 GitHub 저장소에 안전하게 기록되었습니다!`);
+                if (token && token.trim()) {
+                    const success = await syncToCloud(projs, token.trim(), currentSha);
+                    if (success) {
+                        alert(`'${pName}' 데이터가 GitHub 저장소에 안전하게 기록되었습니다!`);
+                    } else {
+                        alert(`'${pName}' 저장이 기기에만 이루어졌습니다. 토큰을 확인해 주세요.`);
+                    }
                 } else {
-                    alert(`'${pName}' 저장이 기기에만 이루어졌습니다. 토큰을 확인해 주세요.`);
+                    alert(`'${pName}' 프로젝트가 기기(로컬)에 저장되었습니다.\n(클라우드에 저장하려면 GitHub 토큰을 설정해주세요.)`);
                 }
-            } else {
-                alert(`'${pName}' 프로젝트가 기기(로컬)에 저장되었습니다.\n(클라우드에 저장하려면 GitHub 토큰을 설정해주세요.)`);
+            } catch (e) {
+                console.error('Save Error:', e);
+                alert('저장 중 오류가 발생했습니다: ' + e.message);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 저장/수정';
+                btn.disabled = false;
             }
-
-            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 저장/수정';
-            btn.disabled = false;
         });
 
         document.getElementById('deleteProjectBtn').addEventListener('click', async () => {
