@@ -17,7 +17,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const achievementLevels = [0.6, 0.7, 0.8, 0.9, 1.0];
 
+    const GITHUB_REPO = 'evinjeong/homeshopping-dashboard';
+    const GITHUB_PATH = 'data/projects.json';
+
+    async function fetchFromGithub(token) {
+        try {
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            const content = decodeURIComponent(escape(atob(data.content)));
+            return { sha: data.sha, projs: JSON.parse(content) };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function syncToGithub(token, projs, sha) {
+        try {
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify(projs))));
+            const body = { message: "Sync database from web app", content, branch: "main" };
+            if (sha) body.sha = sha;
+
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            return res.ok;
+        } catch (e) {
+            return false;
+        }
+    }
+
     function init() {
+        // Auto-fetch if token exists on boot
+        const token = localStorage.getItem('abar_github_token');
+        if (token) {
+            fetchFromGithub(token).then(data => {
+                if (data && data.projs) {
+                    saveProjects(data.projs);
+                    updateProjectDropdown();
+                }
+            });
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('p');
         if (sharedData) {
@@ -503,26 +548,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initProjectManager() {
         updateProjectDropdown();
-        document.getElementById('saveProjectBtn').addEventListener('click', () => {
+        document.getElementById('saveProjectBtn').addEventListener('click', async () => {
             const pName = document.getElementById('projectName').value.trim();
             if (!pName) return alert('저장할 프로젝트명을 입력해주세요.');
-            const projs = getProjects();
+
+            const btn = document.getElementById('saveProjectBtn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
+            btn.disabled = true;
+
+            const token = localStorage.getItem('abar_github_token');
+            let projs = getProjects();
+            let sha = null;
+
+            if (token) {
+                const cloudData = await fetchFromGithub(token);
+                if (cloudData) {
+                    projs = cloudData.projs || {};
+                    sha = cloudData.sha;
+                }
+            }
+
             projs[pName] = JSON.parse(JSON.stringify(state));
             saveProjects(projs);
             updateProjectDropdown();
             document.getElementById('projectSelect').value = pName;
-            alert(`'${pName}' 프로젝트가 성적으로 저장/수정되었습니다.`);
+
+            if (token) {
+                const success = await syncToGithub(token, projs, sha);
+                if (success) alert(`'${pName}' 데이터가 클라우드(GitHub)에 성공적으로 동기화되었습니다!`);
+                else alert(`'${pName}' 로컬 저장은 완료되었으나 클라우드 동기화에 실패했습니다.\n토큰을 확인해주세요.`);
+            } else {
+                alert(`'${pName}' 프로젝트가 로컬 캐시에 저장/수정되었습니다.\n(클라우드 동기화를 원하시면 시스템 설정에서 토큰을 입력하세요)`);
+            }
+
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 저장/수정';
+            btn.disabled = false;
         });
 
-        document.getElementById('deleteProjectBtn').addEventListener('click', () => {
+        document.getElementById('deleteProjectBtn').addEventListener('click', async () => {
             const pName = document.getElementById('projectSelect').value;
             if (!pName) return alert('삭제할 프로젝트를 불러오기 목록에서 선택해주세요.');
-            if (confirm(`정말 '${pName}' 프로젝트의 저장 데이터를 영구 삭제하시겠습니까?`)) {
-                const projs = getProjects();
-                delete projs[pName];
+            if (confirm(`정말 '${pName}' 프로젝트를 영구 삭제하시겠습니까? (클라우드 포함)`)) {
+
+                const token = localStorage.getItem('abar_github_token');
+                let projs = getProjects();
+                let sha = null;
+
+                if (token) {
+                    const cloudData = await fetchFromGithub(token);
+                    if (cloudData) {
+                        projs = cloudData.projs || {};
+                        sha = cloudData.sha;
+                    }
+                }
+
+                if (projs[pName]) delete projs[pName];
                 saveProjects(projs);
                 updateProjectDropdown();
                 document.getElementById('projectName').value = '';
+
+                if (token) {
+                    const btn = document.getElementById('deleteProjectBtn');
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    await syncToGithub(token, projs, sha);
+                    btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                }
             }
         });
 
@@ -667,6 +757,32 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('currentPassword').value = '';
             document.getElementById('newPassword').value = '';
             settingsOverlay.style.display = 'none';
+        });
+
+        // 5. GitHub Cloud Sync
+        const currentToken = localStorage.getItem('abar_github_token');
+        if (currentToken) document.getElementById('githubToken').value = currentToken;
+
+        document.getElementById('saveGithubTokenBtn')?.addEventListener('click', () => {
+            const t = document.getElementById('githubToken').value.trim();
+            if (!t) {
+                if (confirm('토큰을 지우시겠습니까? 향후 클라우드 연동이 중단됩니다.')) {
+                    localStorage.removeItem('abar_github_token');
+                    alert('동기화가 중단되었습니다.');
+                }
+                return;
+            }
+            localStorage.setItem('abar_github_token', t);
+            alert('동기화 액세스 토큰이 저장되었습니다!\n이제 저장/삭제시 GitHub 클라우드와 자동으로 동기화됩니다.');
+
+            // force fetch immediately
+            fetchFromGithub(t).then(data => {
+                if (data && data.projs) {
+                    saveProjects(data.projs);
+                    updateProjectDropdown();
+                    alert('클라우드의 기존 데이터베이스를 현재 기기로 불러왔습니다!');
+                }
+            });
         });
     }
 

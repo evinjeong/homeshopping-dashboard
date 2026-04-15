@@ -320,6 +320,21 @@
                         비밀번호를 분실하면 브라우저 캐시(LocalStorage)를 삭제해야 접근이 가능해지므로 주의하세요.</p>
                 </div>
             </div>
+
+            <div class="settings-section" style="margin-top: 2rem;">
+                <h3 style="font-size: 0.95rem; margin-bottom: 1rem; color: var(--text-secondary);"><i
+                        class="fa-brands fa-github"></i> 클라우드 동기화 (GitHub API)</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">
+                        기기 간 완벽한 저장 목록 연동을 위해 GitHub 데이터베이스를 사용합니다.<br>이 기기에 액세스 토큰을 등록하면 저장/불러오기가 자동으로 클라우드와 연동됩니다.
+                    </p>
+                    <input type="password" id="githubToken" placeholder="GitHub Personal Access Token"
+                        class="input-trans" style="font-size: 0.95rem;">
+                    <button class="btn" id="saveGithubTokenBtn"
+                        style="justify-content: center; margin-top: 0.5rem; border: 1px solid var(--border-color);">동기화
+                        토큰 저장</button>
+                </div>
+            </div>
         </div>
     </div>
 
