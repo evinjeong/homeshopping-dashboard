@@ -24,7 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const tempURL = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}?t=${Date.now()}`;
             const res = await fetch(tempURL, {
-                headers: { 'Authorization': `token ${token}` },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                },
                 cache: 'no-store'
             });
             if (!res.ok) return null;
@@ -45,7 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}`, {
                 method: 'PUT',
-                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
                 body: JSON.stringify(body)
             });
             return res.ok;
@@ -796,10 +803,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // force fetch immediately
             fetchFromGithub(t).then(data => {
-                if (data && data.projs) {
-                    saveProjects(data.projs);
-                    updateProjectDropdown();
-                    alert('클라우드의 기존 데이터베이스를 현재 기기로 불러왔습니다!');
+                if (data) {
+                    if (data.projs) {
+                        saveProjects(data.projs);
+                        updateProjectDropdown();
+                    }
+                    alert('클라우드의 기존 데이터베이스를 현재 기기로 성공적으로 불러왔습니다!');
+                } else {
+                    alert('[오류] 토큰이 유효하지 않거나 저장소 접근 권한이 없습니다. 권한(repo 체크)을 다시 한번 확인해주세요.');
                 }
             });
         });
