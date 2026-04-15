@@ -142,6 +142,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveProjects(local);
                 updateProjectDropdown();
                 console.log('System settings safely synced and decrypted from cloud.');
+
+                // NEW: Trigger login check again after sync
+                const savedPw = localStorage.getItem('abar_password');
+                const overlay = document.getElementById('loginOverlay');
+                if (savedPw && overlay) {
+                    overlay.style.display = 'flex';
+                }
             }
         } catch (e) { }
     }
