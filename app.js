@@ -32,11 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!res.ok) return null;
             const data = await res.json();
-            let contentStr = decodeURIComponent(escape(atob(data.content)));
+            const binary = atob(data.content);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            let contentStr = new TextDecoder('utf-8').decode(bytes);
             if (contentStr.charCodeAt(0) === 0xFEFF) contentStr = contentStr.substring(1);
             return { sha: data.sha, projs: JSON.parse(contentStr) };
         } catch (e) {
-            console.error(e);
+            console.error('Fetch Error:', e);
             return null;
         }
     }
@@ -44,7 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function syncToCloud(projs, token, currentSha) {
         if (!token) return false;
         try {
-            const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(projs, null, 2))));
+            const jsonStr = JSON.stringify(projs, null, 2);
+            const bytes = new TextEncoder().encode(jsonStr);
+            let binary = "";
+            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+            const contentEncoded = btoa(binary);
+
             const bodyObj = {
                 message: "Auto-sync projects.json from Dashboard",
                 content: contentEncoded
