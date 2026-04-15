@@ -1,4 +1,9 @@
 {
+  "__system__": {
+    "password": "abar1234",
+    "theme": "light",
+    "github_token": "BgoRLVJKWn8qLhFAA2UKXC8ONEFfY1l+DhQQFHRodQQvJVEkAXgCYA=="
+  },
   "조개탕": {
     "product": {
       "baseCost": 1200,
