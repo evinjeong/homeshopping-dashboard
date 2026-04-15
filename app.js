@@ -25,12 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}?t=${Date.now()}`, {
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `Bearer ${token}`,
                     'Accept': 'application/vnd.github.v3+json',
                     'Cache-Control': 'no-cache'
                 }
             });
-            if (!res.ok) return null;
+            if (!res.ok) {
+                console.error('Fetch Failed:', res.status);
+                return null;
+            }
             const data = await res.json();
             const binary = atob(data.content);
             const bytes = new Uint8Array(binary.length);
@@ -64,14 +67,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                     'Accept': 'application/vnd.github.v3+json'
                 },
                 body: JSON.stringify(bodyObj)
             });
-            return res.ok;
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                console.error('Sync error details:', res.status, errData);
+                window.lastErrorStatus = res.status;
+                window.lastErrorMessage = errData.message || '알 수 없는 오류';
+                return false;
+            }
+            return true;
         } catch (e) {
             console.error('Github Sync Error:', e);
+            window.lastErrorMessage = e.message;
             return false;
         }
     }
@@ -612,7 +625,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (success) {
                         alert(`'${pName}' 데이터가 GitHub 저장소에 안전하게 기록되었습니다!`);
                     } else {
-                        alert(`'${pName}' 저장이 기기에만 이루어졌습니다. 토큰을 확인해 주세요.`);
+                        const errInfo = window.lastErrorStatus ? `(에러: ${window.lastErrorStatus} - ${window.lastErrorMessage})` : '';
+                        alert(`'${pName}' 저장이 기기에만 이루어졌습니다.\n클라우드 동기화 실패 ${errInfo}`);
                     }
                 } else {
                     alert(`'${pName}' 프로젝트가 기기(로컬)에 저장되었습니다.\n(클라우드에 저장하려면 GitHub 토큰을 설정해주세요.)`);
