@@ -116,6 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function calculateActualMetrics(act, ch, p) {
         if (!act) return null;
+        const currentConvRate = act.convRate !== undefined ? (act.convRate / 100) : (p.conversionRate / 100);
+
         let rev1 = 0, orderQty1 = 0;
         if (act.inputType === 'rev') {
             rev1 = act.inputValue;
@@ -137,8 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const totalOrderQty = orderQty1 + orderQty2;
-        const totalNetOrderQty1 = orderQty1 * (p.conversionRate / 100) * (1 - p.returnRate / 100);
-        const totalNetOrderQty2 = orderQty2 * (p.conversionRate / 100) * (1 - p.returnRate / 100);
+        const totalNetOrderQty1 = orderQty1 * currentConvRate * (1 - p.returnRate / 100);
+        const totalNetOrderQty2 = orderQty2 * currentConvRate * (1 - p.returnRate / 100);
         const totalNetOrderQty = totalNetOrderQty1 + totalNetOrderQty2;
 
         const lossF = 1 - (p.lossRate / 100);
@@ -147,8 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const baseVar = invC + p.packingFee + p.deliveryFeeGlobal + p.extraCostPerBundle;
         const costPerNetItem = baseVar + ch.deliveryFee + p.modelPerOrder;
 
-        const netRev1 = rev1 * (p.conversionRate / 100) * (1 - p.returnRate / 100);
-        const netRev2 = rev2 * (p.conversionRate / 100) * (1 - p.returnRate / 100);
+        const netRev1 = rev1 * currentConvRate * (1 - p.returnRate / 100);
+        const netRev2 = rev2 * currentConvRate * (1 - p.returnRate / 100);
         const totalNetRev = netRev1 + netRev2;
 
         const comm1 = rev1 * (ch.commRate / 100);
@@ -316,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatWon(n) { return (Math.abs(n) >= 100000000) ? (n / 100000000).toFixed(1) + '억' : (Math.abs(n) >= 10000) ? (n / 10000).toFixed(0) + '만' : fN(n); }
 
     function initActualState(chId) {
-        state.actuals[chId] = { date: '', inputType: 'qty', inputValue: 0, inputType2: 'qty', inputValue2: 0, guestCost: 0, demoCost: 0, promoCost: 0, otherCost: 0, isSaved: false };
+        state.actuals[chId] = { date: '', inputType: 'qty', inputValue: 0, inputType2: 'qty', inputValue2: 0, convRate: state.product.conversionRate, guestCost: 0, demoCost: 0, promoCost: 0, otherCost: 0, isSaved: false };
     }
 
     function refreshActualUI() {
@@ -327,13 +329,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const act = state.actuals[chId];
         const ch = state.channels.find(c => c.id === chId);
 
-        const ids = ['actualInputValue', 'actualInputValue2', 'actualGuestCost', 'actualDemoCost', 'actualPromoCost', 'actualOtherCost'];
+        const ids = ['actualInputValue', 'actualInputValue2', 'actualGuestCost', 'actualDemoCost', 'actualPromoCost', 'actualOtherCost', 'actualConvRate'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
                 const sKey = id.replace('actual', '').charAt(0).toLowerCase() + id.replace('actual', '').slice(1);
                 if (act[sKey] !== undefined) el.value = act[sKey];
-                else el.value = 0;
+                else {
+                    if (id === 'actualConvRate') el.value = state.product.conversionRate || 100;
+                    else el.value = 0;
+                }
             }
         });
 
@@ -360,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function bindActualInputs() {
-        const ids = ['actualInputValue', 'actualInputValue2', 'actualGuestCost', 'actualDemoCost', 'actualPromoCost', 'actualOtherCost'];
+        const ids = ['actualInputValue', 'actualInputValue2', 'actualGuestCost', 'actualDemoCost', 'actualPromoCost', 'actualOtherCost', 'actualConvRate'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
