@@ -322,7 +322,9 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        document.write('<script src="app.js?v=' + Date.now() + '"><\/script>');
+    </script>
 </body>
 
 </html>
