@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchFromCloud() {
         try {
-            const res = await fetch(CLOUD_URL, {
+            const res = await fetch(`${CLOUD_URL}?t=${Date.now()}`, {
                 headers: { 'Accept': 'application/json' },
                 cache: 'no-store'
             });
@@ -557,8 +557,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let projs = getProjects();
 
+            // fetch cloud first to merge
             const cloudProjs = await fetchFromCloud();
-            if (cloudProjs) projs = Object.assign(projs, cloudProjs);
+            if (cloudProjs) {
+                projs = { ...cloudProjs, ...projs };
+            }
 
             projs[pName] = JSON.parse(JSON.stringify(state));
             saveProjects(projs);
@@ -567,9 +570,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const success = await syncToCloud(projs);
             if (success) {
-                alert(`'${pName}' 프로젝트가 클라우드에 성공적으로 자동 백업되었습니다!\n이제 기기 상관없이 바로 불러올 수 있습니다.`);
+                alert(`'${pName}' 프로젝트가 클라우드에 성공적으로 자동 백업되었습니다!\n이제 어떤 기기에서든 즉시 불러오실 수 있습니다.`);
             } else {
-                alert(`'${pName}' 프로젝트가 기기에만 저장되었습니다.\n(클라우드 동기화 연결 실패)`);
+                alert(`'${pName}' 프로젝트가 로컬 캐시에 저장되었습니다.\n(클라우드 동기화 일시 실패)`);
             }
 
             btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 저장/수정';
