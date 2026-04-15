@@ -18,6 +18,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const achievementLevels = [0.6, 0.7, 0.8, 0.9, 1.0];
 
     function init() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedData = urlParams.get('p');
+        if (sharedData) {
+            try {
+                const decoded = decodeURIComponent(escape(atob(sharedData)));
+                state = JSON.parse(decoded);
+                setTimeout(() => alert('공유받은 프로젝트 설정 데이터를 성공적으로 불러왔습니다!'), 100);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } catch (e) {
+                setTimeout(() => alert('공유 링크 정보가 올바르지 않거나 손상되었습니다.'), 100);
+            }
+        }
+
         if (!state.actuals) state.actuals = {};
         bindGlobalInputs();
         renderInputTable();
@@ -521,6 +534,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 state = JSON.parse(JSON.stringify(projs[pName]));
                 document.getElementById('projectName').value = pName;
                 refreshUI();
+            }
+        });
+
+        document.getElementById('shareProjectBtn')?.addEventListener('click', () => {
+            try {
+                const dataStr = JSON.stringify(state);
+                const base64Data = btoa(unescape(encodeURIComponent(dataStr)));
+                const url = window.location.origin + window.location.pathname + '?p=' + base64Data;
+
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('현재 화면의 통합 설정이 고유 링크로 복사되었습니다!\nPC/모바일 메신저 등 어디든 붙여넣기 하시면 같은 화면이 열립니다.');
+                }).catch(err => {
+                    prompt('아래 링크를 전체 복사하여 다른 기기로 전달해주세요:', url);
+                });
+            } catch (e) {
+                alert('데이터가 너무 커서 링크를 생성할 수 없습니다.');
             }
         });
     }
