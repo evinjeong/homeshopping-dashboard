@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<!-- Build Trigger: 2026-04-15 19:26 -->
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABAR | Homeshopping Profit Analytics</title>
+    <link rel="stylesheet" href="styles.css?v=20260415_mobile_final">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="app_v3.js?v=20260415_mobile_final" defer></script>
+</head>
+
+<body class="dark-theme">
+    <aside class="sidebar">
+        <div class="logo"><i class="fa-solid fa-bolt-lightning"></i><span>ABAR <span>Analytics</span></span></div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" id="menuAnalysis"><i class="fa-solid fa-chart-pie"></i> <span>분석
+                    센터</span></a>
+            <a href="#actualSettlementSec" class="nav-item" id="menuSettlement"><i
+                    class="fa-solid fa-file-invoice-dollar"></i> <span>사후 정산</span></a>
+            <a href="#" class="nav-item" id="menuSettings"><i class="fa-solid fa-gear"></i> <span>시스템 설정</span></a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="page-title">
+                <h2>Homeshopping Profit Analytics</h2>
+                <p>Premium ROI Simulation & Post-Settlement Engine</p>
+            </div>
+            <div class="top-controls">
+                <input type="text" id="projectName" placeholder="프로젝트명" class="input-trans projectNameInput">
+                <button class="btn btn-primary" id="saveProjectBtn">
+                    <i class="fa-solid fa-floppy-disk"></i> <span class="responsive-text">저장/수정</span>
+                </button>
+                <select id="projectSelect" class="input-trans projectSelectBox">
+                    <option value="">-- 내 프로젝트 --</option>
+                </select>
+                <button class="btn btn-icon" id="deleteProjectBtn" title="삭제"><i
+                        class="fa-solid fa-trash-can"></i></button>
+                <button class="btn btn-icon" id="shareProjectBtn" title="공유"><i
+                        class="fa-solid fa-share-nodes"></i></button>
+                <button class="btn btn-primary" id="addChannelBtn"><i class="fa-solid fa-plus"></i> <span
+                        class="responsive-text">채널 추가</span></button>
+            </div>
+        </header>
+
+        <div class="dashboard-inner">
+            <!-- 1. Expanded Simulation Settings (Matches User Image) -->
+            <section class="card config-card">
+                <div class="card-header">
+                    <h3><i class="fa-regular fa-calculator"></i> 시뮬레이션 조건 설정 (수량/비용 커스텀 및 다중 모델비 지원)</h3>
+                </div>
+                <div class="config-grid-expanded">
+                    <!-- Row 1 -->
+                    <div class="config-item">
+                        <label>기본 원가 (단품)</label>
+                        <input type="number" id="baseCost" value="11920" class="input-trans">
+                    </div>
+                    <div class="config-item cyan">
+                        <label>구성 수량 (배수)</label>
+                        <input type="number" id="bundleCount" value="1" class="input-trans">
+                    </div>
+                    <div class="config-item green">
+                        <label>판매가 (제안)</label>
+                        <input type="number" id="salePrice" value="17880" class="input-trans">
+                    </div>
+                    <div class="config-item">
+                        <label>포장비 (총 고정)</label>
+                        <input type="number" id="packingFee" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item">
+                        <label>배송비 (총 고정)</label>
+                        <input type="number" id="deliveryFeeGlobal" value="0" class="input-trans">
+                    </div>
+
+                    <!-- Row 2 -->
+                    <div class="config-item">
+                        <label>로스율 (%)</label>
+                        <input type="number" id="lossRate" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item blue">
+                        <label>세트당 추가비용</label>
+                        <input type="number" id="extraCostPerBundle" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item blue">
+                        <label>단품개당 비용</label>
+                        <input type="number" id="extraCostPerItem" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item orange">
+                        <label>모델비 (정액 전체)</label>
+                        <input type="number" id="modelFeeFixed" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item orange">
+                        <label>모델비 (판매건당, 원)</label>
+                        <input type="number" id="modelPerOrder" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item orange">
+                        <label>모델비 (매출요율, %)</label>
+                        <input type="number" id="modelFeeRate" value="0" class="input-trans">
+                    </div>
+                </div>
+
+                <!-- Hidden/Utility Vars for ROI -->
+                <div class="utility-vars">
+                    <div class="util-item">반품률 (%) <input type="number" id="returnRate" value="17" class="mini-input">
+                    </div>
+                    <div class="util-item">전환율 (%) <input type="number" id="conversionRate" value="100"
+                            class="mini-input"></div>
+                </div>
+            </section>
+
+            <!-- 2. Scenarios -->
+            <section class="card input-card">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-tower-broadcast"></i> 채널별 계약 시나리오</h3>
+                </div>
+                <div class="table-container">
+                    <div class="dashboard-table-wrapper">
+                        <table class="dashboard-table" style="margin-top:0;">
+                            <thead>
+                                <tr>
+                                    <th>채널명</th>
+                                    <th>고정비 + 수수료</th>
+                                    <th>1+1</th>
+                                    <th>배송비</th>
+                                    <th>목표매출 (1차/2차)</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="channelTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Post-Broadcast Settlement -->
+            <section class="card input-card" style="margin-top: 2rem;" id="actualSettlementSec">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;"><i class="fa-solid fa-file-invoice-dollar"></i> 실적 사후 정산 모듈</h3>
+                    <button class="btn btn-primary" id="saveActualBtn"><i class="fa-solid fa-floppy-disk"></i> 결과 리포트에
+                        추가</button>
+                </div>
+
+                <div class="config-grid-expanded">
+                    <div class="config-item">
+                        <label>적용 시나리오 (채널)</label>
+                        <select id="actualChannelSelect" class="input-trans"></select>
+                    </div>
+                    <div class="config-item">
+                        <label>방송 날짜</label>
+                        <input type="date" id="actualDate" class="input-trans">
+                    </div>
+                    <div class="config-item green" style="display: flex; flex-direction: column;">
+                        <label style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>1차 방송 실적</span>
+                            <select id="actualInputType" class="input-trans"
+                                style="width: auto; padding: 0px 4px; font-size: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color);">
+                                <option value="qty">주문수량</option>
+                                <option value="rev">매출액</option>
+                            </select>
+                        </label>
+                        <input type="number" id="actualInputValue" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item green" id="actual2ndGroup"
+                        style="display: flex; flex-direction: column; opacity: 0.5;">
+                        <label style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>2차 방송 실적</span>
+                            <select id="actualInputType2" class="input-trans"
+                                style="width: auto; padding: 0px 4px; font-size: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color);"
+                                disabled>
+                                <option value="qty">주문수량</option>
+                                <option value="rev">매출액</option>
+                            </select>
+                        </label>
+                        <input type="number" id="actualInputValue2" value="0" class="input-trans" disabled>
+                    </div>
+                    <div class="config-item blue">
+                        <label>적용 전환율 (1/2차 %)</label>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="number" id="actualConvRate" class="input-trans" placeholder="1차"
+                                style="flex:1;">
+                            <input type="number" id="actualConvRate2" class="input-trans" placeholder="2차"
+                                style="flex:1;" disabled>
+                        </div>
+                    </div>
+                    <div class="config-item blue">
+                        <label>적용 반품률 (1/2차 %)</label>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="number" id="actualReturnRate" class="input-trans" placeholder="1차"
+                                style="flex:1;">
+                            <input type="number" id="actualReturnRate2" class="input-trans" placeholder="2차"
+                                style="flex:1;" disabled>
+                        </div>
+                    </div>
+                    <div class="config-item cyan">
+                        <label>합산 예상 순 주문량</label>
+                        <input type="number" id="actualNetQty" value="0" class="input-trans" readonly
+                            style="background: rgba(30, 41, 59, 0.7); color: var(--brand-color);">
+                    </div>
+                </div>
+
+                <div class="config-grid-expanded actual-finance-grid">
+                    <div class="config-item orange">
+                        <label>게스트 비용</label>
+                        <input type="number" id="actualGuestCost" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item orange">
+                        <label>시연 비용</label>
+                        <input type="number" id="actualDemoCost" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item orange">
+                        <label>프로모션 비용</label>
+                        <input type="number" id="actualPromoCost" value="0" class="input-trans">
+                    </div>
+                    <div class="config-item blue">
+                        <label>기타 사후 비용</label>
+                        <input type="number" id="actualOtherCost" value="0" class="input-trans">
+                    </div>
+                </div>
+
+                <div id="actualResultContainer" style="margin-top:2rem;"></div>
+            </section>
+
+            <!-- 4. Dynamic Results -->
+            <div id="detailedChannelCards"></div>
+        </div>
+    </main>
+
+    <!-- Templates -->
+    <template id="channelRowTemplate">
+        <tr class="channel-row">
+            <td><input type="text" class="cell-input-premium channel-name" style="width:100%; min-width:100px;"></td>
+            <td>
+                <div class="fee-ui-cluster" style="white-space: nowrap;">
+                    <div style="margin-bottom:6px; display:flex; align-items:center; gap:4px;">1: <input type="number"
+                            class="fixed-fee cell-input-premium" style="width:120px; min-width:120px;">+<input
+                            type="number" class="comm-rate cell-input-premium" style="width:60px; min-width:60px;">%
+                    </div>
+                    <div class="secondary-fee-ui" style="opacity:0.25; display:flex; align-items:center; gap:4px;">2:
+                        <input type="number" class="fixed-fee-2 cell-input-premium"
+                            style="width:120px; min-width:120px;">+<input type="number"
+                            class="comm-rate-2 cell-input-premium" style="width:60px; min-width:60px;">%
+                    </div>
+                </div>
+            </td>
+            <td><label class="switch"><input type="checkbox" class="one-plus-one-toggle"><span
+                        class="slider round"></span></label></td>
+            <td><input type="number" class="delivery-fee cell-input-premium" style="width:90px; min-width:90px;"></td>
+            <td>
+                <div class="target-cluster" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap;">
+                    <input type="number" class="target-revenue-1 cell-input-premium"
+                        style="width:135px; min-width:135px;">
+                    <span>/</span>
+                    <input type="number" class="target-revenue-2 cell-input-premium"
+                        style="width:135px; min-width:135px;" disabled>
+                </div>
+            </td>
+            <td><button class="btn-icon delete-btn"><i class="fa-solid fa-trash-can"></i></button></td>
+        </tr>
+    </template>
+
+    <template id="analysisCardTemplate">
+        <div class="image-card">
+            <div class="image-card-header">
+                <div class="header-left">
+                    <h2 class="ch-name">채널명</h2>
+                    <div class="ch-summary-area"></div>
+                </div>
+                <div class="header-right">
+                    <span class="bep-label">통합 BEP 주문액</span>
+                    <div class="bep-value">약 <span class="bep-val-num">0</span></div>
+                </div>
+            </div>
+            <div class="analysis-sections-container"></div>
+        </div>
+    </template>
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="overlay" style="display: none;">
+        <div class="modal">
+            <h2 style="margin-bottom: 2rem; text-align: center;"><i class="fa-solid fa-bolt-lightning"
+                    style="color:var(--brand-color);"></i> ABAR ANALYTICS</h2>
+            <div style="margin-top: 1rem;">
+                <input type="password" id="loginPassword" placeholder="비밀번호 입력" class="input-trans"
+                    style="width: 100%; margin-bottom: 1rem; font-size: 1.2rem; padding: 0.8rem; text-align: center;">
+            </div>
+            <button class="btn btn-primary" id="loginBtn" style="width: 100%; justify-content: center;">접속하기</button>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settingsOverlay" class="overlay" style="display: none;">
+        <div class="modal">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2><i class="fa-solid fa-gear"></i> 시스템 설정</h2>
+                <button class="btn-icon" id="closeSettingsBtn"><i class="fa-solid fa-xmark"
+                        style="font-size: 1.25rem;"></i></button>
+            </div>
+
+            <div class="settings-section" style="margin-bottom: 2rem;">
+                <h3 style="font-size: 0.95rem; margin-bottom: 1rem; color: var(--text-secondary);">UI 테마 모드</h3>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn" id="themeDarkBtn" style="flex: 1; border: 1px solid var(--border-color);"><i
+                            class="fa-solid fa-moon"></i> 다크 모드</button>
+                    <button class="btn" id="themeLightBtn" style="flex: 1; border: 1px solid var(--border-color);"><i
+                            class="fa-solid fa-sun"></i> 밝은 모드</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3 style="font-size: 0.95rem; margin-bottom: 1rem; color: var(--text-secondary);">접속 비밀번호 설정</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <input type="password" id="currentPassword" placeholder="현재 비밀번호 (설정된 경우)" class="input-trans"
+                        style="font-size: 0.95rem;">
+                    <input type="password" id="newPassword" placeholder="새 비밀번호 입력" class="input-trans"
+                        style="font-size: 0.95rem;">
+                    <button class="btn btn-primary" id="changePasswordBtn"
+                        style="justify-content: center; margin-top: 0.5rem;">비밀번호 변경/저장</button>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;">
+                        비밀번호를 분실하면 브라우저 캐시(LocalStorage)를 삭제해야 접근이 가능해지므로 주의하세요.</p>
+                </div>
+                <div class="settings-section" style="margin-top: 2rem;">
+                    <h3 style="font-size: 0.95rem; margin-bottom: 1rem; color: var(--text-secondary);"><i
+                            class="fa-brands fa-github"></i> 깃허브(GitHub) 다이렉트 저장소</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">
+                            외부 클라우드 오류 방지를 위해, 이 깃허브 저장소(projects.json)에 직접 데이터를 저장합니다. <br>
+                            <strong>권한이 있는 토큰(PAT)</strong>을 입력하면, 저장 시 토큰을 통해 깃허브에 직접 쓰기를 수행합니다.
+                        </p>
+                        <input type="password" id="githubToken" placeholder="GitHub Personal Access Token (classic)"
+                            class="input-trans" style="font-size: 0.95rem;">
+                        <button class="btn btn-primary" id="saveGithubTokenBtn"
+                            style="justify-content: center; margin-top: 0.5rem;">토큰 기기에 기억하기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.write('<script src="app_v3.js?v=20260415_v3"><\/script>');
+        </script>
+</body>
+
+</html>
