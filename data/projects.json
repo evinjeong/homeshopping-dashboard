@@ -1,1 +1,78 @@
-﻿{}
+{
+  "조개탕": {
+    "product": {
+      "baseCost": 1200,
+      "bundleCount": 10,
+      "salePrice": 49900,
+      "packingFee": 3217,
+      "deliveryFeeGlobal": 0,
+      "lossRate": 0,
+      "extraCostPerBundle": 500,
+      "extraCostPerItem": 0,
+      "modelFeeFixed": 2200000,
+      "modelPerOrder": 0,
+      "modelFeeRate": 0,
+      "returnRate": 0,
+      "conversionRate": 85
+    },
+    "channels": [
+      {
+        "id": "ch1",
+        "name": "GS리테일",
+        "fixedFee": 19080000,
+        "commRate": 20,
+        "fixedFee2": 0,
+        "commRate2": 38,
+        "isOnePlusOne": true,
+        "deliveryFee": 0,
+        "targetRevenue1": 84830000,
+        "targetRevenue2": 44910000
+      },
+      {
+        "id": "1776228874072",
+        "name": "SK스토아",
+        "fixedFee": 16500000,
+        "commRate": 15,
+        "fixedFee2": 0,
+        "commRate2": 20,
+        "isOnePlusOne": false,
+        "deliveryFee": 2650,
+        "targetRevenue1": 8483000,
+        "targetRevenue2": 0
+      }
+    ],
+    "actual": {
+      "channelId": "1776228874072"
+    },
+    "actuals": {
+      "ch1": {
+        "date": "2026-04-14",
+        "inputType": "rev",
+        "inputValue": 45572500,
+        "inputType2": "qty",
+        "inputValue2": 0,
+        "guestCost": 0,
+        "demoCost": 0,
+        "promoCost": 0,
+        "otherCost": 0,
+        "isSaved": true,
+        "convRate2": 0,
+        "convRate": 97.7
+      },
+      "1776228874072": {
+        "date": "2026-04-08",
+        "inputType": "rev",
+        "inputValue": 52244900,
+        "inputType2": "qty",
+        "inputValue2": 0,
+        "convRate": 83.2,
+        "convRate2": 85,
+        "guestCost": 0,
+        "demoCost": 0,
+        "promoCost": 0,
+        "otherCost": 0,
+        "isSaved": true
+      }
+    }
+  }
+}
