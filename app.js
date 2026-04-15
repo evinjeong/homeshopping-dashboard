@@ -29,8 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!res.ok) return null;
             const data = await res.json();
-            const content = decodeURIComponent(escape(atob(data.content)));
-            return { sha: data.sha, projs: JSON.parse(content) };
+            let contentStr = decodeURIComponent(escape(atob(data.content)));
+            if (contentStr.charCodeAt(0) === 0xFEFF) contentStr = contentStr.substring(1);
+            return { sha: data.sha, projs: JSON.parse(contentStr) };
         } catch (e) {
             return null;
         }
