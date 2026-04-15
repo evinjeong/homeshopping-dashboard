@@ -17,41 +17,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const achievementLevels = [0.6, 0.7, 0.8, 0.9, 1.0];
 
-    const JSONBLOB_ID = '019d8fa8-5274-7822-8827-f16ce2cb56c2';
-    const CLOUD_URL = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
+    const GITHUB_REPO = 'evinjeong/homeshopping-dashboard';
+    const GITHUB_PATH = 'data/projects.json';
 
-    async function fetchFromCloud() {
+    async function fetchFromCloud(token) {
+        if (!token) return null;
         try {
-            const res = await fetch(`${CLOUD_URL}?t=${Date.now()}`, {
-                headers: { 'Accept': 'application/json' },
-                cache: 'no-store'
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}?t=${Date.now()}`, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Cache-Control': 'no-cache'
+                }
             });
             if (!res.ok) return null;
-            return await res.json();
-        } catch (e) { return null; }
+            const data = await res.json();
+            let contentStr = decodeURIComponent(escape(atob(data.content)));
+            if (contentStr.charCodeAt(0) === 0xFEFF) contentStr = contentStr.substring(1);
+            return { sha: data.sha, projs: JSON.parse(contentStr) };
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
     }
 
-    async function syncToCloud(projs) {
+    async function syncToCloud(projs, token, currentSha) {
+        if (!token) return false;
         try {
-            const res = await fetch(CLOUD_URL, {
+            const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(projs, null, 2))));
+            const bodyObj = {
+                message: "Auto-sync projects.json from Dashboard",
+                content: contentEncoded
+            };
+            if (currentSha) {
+                bodyObj.sha = currentSha;
+            }
+
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}`, {
                 method: 'PUT',
-                mode: 'cors',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
                 },
-                body: JSON.stringify(projs)
+                body: JSON.stringify(bodyObj)
             });
             return res.ok;
         } catch (e) {
-            console.error('Sync Error:', e);
+            console.error('Github Sync Error:', e);
             return false;
         }
     }
 
     async function fetchPublicData() {
         try {
-            const projs = await fetchFromCloud();
+            const res = await fetch(`data/projects.json?t=${Date.now()}`, { cache: 'no-store' });
+            if (!res.ok) return;
+            const text = await res.text();
+            let contentStr = text;
+            if (contentStr.charCodeAt(0) === 0xFEFF) contentStr = contentStr.substring(1);
+            const projs = JSON.parse(contentStr);
             if (projs) {
                 const local = getProjects();
                 Object.assign(local, projs);
@@ -557,12 +581,15 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
             btn.disabled = true;
 
-            let projs = getProjects();
+            const token = localStorage.getItem('abar_github_token');
+            let currentSha = null;
 
-            // fetch cloud first to merge
-            const cloudProjs = await fetchFromCloud();
-            if (cloudProjs) {
-                projs = { ...cloudProjs, ...projs };
+            if (token) {
+                const cloudData = await fetchFromCloud(token);
+                if (cloudData) {
+                    currentSha = cloudData.sha;
+                    if (cloudData.projs) projs = { ...cloudData.projs, ...projs };
+                }
             }
 
             projs[pName] = JSON.parse(JSON.stringify(state));
@@ -570,11 +597,15 @@ document.addEventListener('DOMContentLoaded', () => {
             updateProjectDropdown();
             document.getElementById('projectSelect').value = pName;
 
-            const success = await syncToCloud(projs);
-            if (success) {
-                alert(`'${pName}' 프로젝트가 클라우드에 성공적으로 자동 백업되었습니다!\n이제 어떤 기기에서든 즉시 불러오실 수 있습니다.`);
+            if (token) {
+                const success = await syncToCloud(projs, token, currentSha);
+                if (success) {
+                    alert(`'${pName}' 데이터가 GitHub 저장소에 안전하게 기록되었습니다!`);
+                } else {
+                    alert(`'${pName}' 저장이 기기에만 이루어졌습니다. 토큰을 확인해 주세요.`);
+                }
             } else {
-                alert(`'${pName}' 프로젝트가 로컬 캐시에 저장되었습니다.\n(클라우드 동기화 일시 실패)`);
+                alert(`'${pName}' 프로젝트가 기기(로컬)에 저장되었습니다.\n(클라우드에 저장하려면 GitHub 토큰을 설정해주세요.)`);
             }
 
             btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 저장/수정';
@@ -584,22 +615,31 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('deleteProjectBtn').addEventListener('click', async () => {
             const pName = document.getElementById('projectSelect').value;
             if (!pName) return alert('삭제할 프로젝트를 불러오기 목록에서 선택해주세요.');
-            if (confirm(`정말 '${pName}' 프로젝트를 영구 삭제하시겠습니까? (클라우드 포함)`)) {
+            if (confirm(`정말 '${pName}' 프로젝트를 영구 삭제하시겠습니까?`)) {
 
+                const token = localStorage.getItem('abar_github_token');
                 let projs = getProjects();
+                let currentSha = null;
 
-                const cloudProjs = await fetchFromCloud();
-                if (cloudProjs) projs = Object.assign(projs, cloudProjs);
+                if (token) {
+                    const cloudData = await fetchFromCloud(token);
+                    if (cloudData) {
+                        currentSha = cloudData.sha;
+                        if (cloudData.projs) projs = { ...cloudData.projs, ...projs };
+                    }
+                }
 
                 if (projs[pName]) delete projs[pName];
                 saveProjects(projs);
                 updateProjectDropdown();
                 document.getElementById('projectName').value = '';
 
-                const btn = document.getElementById('deleteProjectBtn');
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                await syncToCloud(projs);
-                btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                if (token) {
+                    const btn = document.getElementById('deleteProjectBtn');
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    await syncToCloud(projs, token, currentSha);
+                    btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                }
             }
         });
 
@@ -743,6 +783,21 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('비밀번호가 성공적으로 설정되었습니다. 다음 접속시부터 적용됩니다.');
             document.getElementById('currentPassword').value = '';
             document.getElementById('newPassword').value = '';
+            settingsOverlay.style.display = 'none';
+        });
+
+        document.getElementById('saveGithubTokenBtn')?.addEventListener('click', () => {
+            const tk = document.getElementById('githubToken').value.trim();
+            if (!tk) {
+                if (confirm('토큰을 지웁니까? 클라우드 동기화가 중단됩니다.')) {
+                    localStorage.removeItem('abar_github_token');
+                    alert('토큰이 지워졌습니다.');
+                }
+                return;
+            }
+            localStorage.setItem('abar_github_token', tk);
+            alert('토큰이 저장되었습니다. 이제부터 저장 시 깃허브에 백업됩니다.');
+            document.getElementById('githubToken').value = '';
             settingsOverlay.style.display = 'none';
         });
     }
