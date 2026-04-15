@@ -541,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const dataStr = JSON.stringify(state);
                 const base64Data = btoa(unescape(encodeURIComponent(dataStr)));
-                const url = window.location.origin + window.location.pathname + '?p=' + base64Data;
+                const url = window.location.origin + window.location.pathname + '?p=' + encodeURIComponent(base64Data);
 
                 navigator.clipboard.writeText(url).then(() => {
                     alert('현재 화면의 통합 설정이 고유 링크로 복사되었습니다!\nPC/모바일 메신저 등 어디든 붙여넣기 하시면 같은 화면이 열립니다.');
