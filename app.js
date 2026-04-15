@@ -583,6 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const token = localStorage.getItem('abar_github_token');
             let currentSha = null;
+            let projs = getProjects();
 
             if (token) {
                 const cloudData = await fetchFromCloud(token);
