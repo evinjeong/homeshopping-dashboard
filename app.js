@@ -30,10 +30,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Cache-Control': 'no-cache'
                 }
             });
-            if (!res.ok) {
-                console.error('Fetch Failed:', res.status);
-                return null;
+
+            if (res.status === 404) {
+                return { sha: null, projs: {} };
             }
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                console.error('Fetch Failed:', res.status, errData);
+                window.lastErrorStatus = res.status;
+                window.lastErrorMessage = `파일 정보 획득 실패: ${errData.message || '권한 부족'}`;
+                return null; // Fatal error
+            }
+
             const data = await res.json();
             const binary = atob(data.content);
             const bytes = new Uint8Array(binary.length);
@@ -43,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return { sha: data.sha, projs: JSON.parse(contentStr) };
         } catch (e) {
             console.error('Fetch Error:', e);
+            window.lastErrorStatus = 'Network';
+            window.lastErrorMessage = e.message;
             return null;
         }
     }
@@ -105,6 +116,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateProjectDropdown();
             }
         } catch (e) { }
+    }
+
+    function getProjects() { return JSON.parse(localStorage.getItem('abar_projects')) || {}; }
+    function saveProjects(projs) { localStorage.setItem('abar_projects', JSON.stringify(projs)); }
+
+    function initProjectManager() {
+        updateProjectDropdown();
+        document.getElementById('saveProjectBtn').addEventListener('click', async () => {
+            const pName = document.getElementById('projectName').value.trim();
+            if (!pName) return alert('저장할 프로젝트명을 입력해주세요.');
+
+            const btn = document.getElementById('saveProjectBtn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
+            btn.disabled = true;
+
+            try {
+                // Reset error state
+                window.lastErrorStatus = null;
+                window.lastErrorMessage = '';
+
+                const token = localStorage.getItem('abar_github_token');
+                let currentSha = null;
+                let projs = getProjects();
+
+                if (token && token.trim()) {
+                    const cloudData = await fetchFromCloud(token.trim());
+                    if (cloudData === null) {
+                        // Critical error during fetch
+                        const errInfo = window.lastErrorStatus ? `(에러: ${window.lastErrorStatus} - ${window.lastErrorMessage})` : '';
+                        alert(`클라우드 정보를 불러오지 못해 자동 저장을 중단합니다.\n${errInfo}`);
+                        return;
+                    }
+                    currentSha = cloudData.sha;
+                    if (cloudData.projs) projs = { ...cloudData.projs, ...projs };
+                }
+
+                projs[pName] = JSON.parse(JSON.stringify(state));
+                saveProjects(projs);
+
+                if (token && token.trim()) {
+                    const success = await syncToCloud(projs, token.trim(), currentSha);
+                    if (!success) {
+                        alert(`로컬에는 저장되었으나 클라우드 동기화에 실패했습니다.\n(${window.lastErrorStatus}: ${window.lastErrorMessage})`);
+                    } else {
+                        alert('프로젝트가 로컬 및 클라우드에 성공적으로 저장되었습니다.');
+                    }
+                } else {
+                    alert('프로젝트가 로컬에 저장되었습니다.');
+                }
+            } finally {
+                btn.innerHTML = '저장';
+                btn.disabled = false;
+                updateProjectDropdown();
+            }
+        });
     }
 
     function init() {
