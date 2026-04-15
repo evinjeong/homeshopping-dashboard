@@ -574,17 +574,23 @@ input:checked+.slider:before {
 }
 
 @media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+
     .sidebar {
         width: 100%;
         height: 60px;
         position: fixed;
         bottom: 0;
         left: 0;
+        right: 0;
         z-index: 100;
         flex-direction: row;
         padding: 0;
         border-right: none;
         border-top: 1px solid var(--border-color);
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
     }
 
     .sidebar .logo {
@@ -608,38 +614,60 @@ input:checked+.slider:before {
     }
 
     .main-content {
-        padding: 1.5rem;
+        padding: 1rem;
         padding-bottom: 80px;
         gap: 1.5rem;
     }
 
-    .config-grid-expanded {
-        grid-template-columns: repeat(2, 1fr);
+    .top-bar {
+        flex-direction: column;
+        align-items: stretch;
         gap: 1rem;
     }
 
+    .top-controls {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .projectNameInput,
+    .projectSelectBox {
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .config-grid-expanded {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .input-trans {
+        font-size: 1rem;
+        padding: 0.6rem 0.75rem;
+    }
+
     .image-card {
-        padding: 1.5rem;
+        padding: 1.25rem;
     }
 
     .image-card-header {
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 1rem;
         align-items: flex-start;
     }
 
-    .header-right {
-        text-align: left;
-    }
-
-    .bep-label,
-    .bep-value {
-        text-align: left;
+    .bep-val-num {
+        font-size: 2rem;
     }
 
     .table-container {
-        margin: 0 -1.5rem;
-        padding: 0 1.5rem;
+        margin: 0 -1rem;
+        padding: 0 1rem;
+        overflow-x: auto;
+    }
+
+    .dashboard-table {
+        min-width: 600px;
     }
 }
 
@@ -648,30 +676,22 @@ input:checked+.slider:before {
         grid-template-columns: 1fr;
     }
 
-    .top-bar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 1.25rem;
+    .btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .top-controls {
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .top-controls .btn {
         width: 100%;
-        justify-content: flex-start;
     }
 
     .responsive-text {
         display: none;
-    }
-
-    .projectNameInput,
-    .projectSelectBox {
-        width: calc(50% - 0.25rem) !important;
-        flex: none;
-    }
-
-    .btn {
-        padding: 0.6rem 0.75rem;
     }
 }
 
