@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function syncToCloud(projs) {
         try {
-            const res = await fetch(`${CLOUD_URL}?t=${Date.now()}`, {
+            const res = await fetch(CLOUD_URL, {
                 method: 'PUT',
                 mode: 'cors',
                 headers: {
