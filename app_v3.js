@@ -20,6 +20,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const GITHUB_REPO = 'evinjeong/homeshopping-dashboard';
     const GITHUB_PATH = 'data/projects.json';
 
+    function crypt(text, key) {
+        if (!key) return text;
+        try {
+            const k = key.repeat(Math.ceil(text.length / key.length));
+            return btoa([...text].map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ k.charCodeAt(i))).join(''));
+        } catch (e) { return text; }
+    }
+    function decrypt(text, key) {
+        if (!key || !text) return text;
+        try {
+            const decoded = atob(text);
+            const k = key.repeat(Math.ceil(decoded.length / key.length));
+            return [...decoded].map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ k.charCodeAt(i))).join('');
+        } catch (e) { return text; }
+    }
+
     async function fetchFromCloud(token) {
         try {
             // Use Raw URL for getting data - more reliable and simpler headers
@@ -107,17 +123,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Settings Sync: Extract system settings if exists
                 if (projs.__system__) {
                     const sys = projs.__system__;
+                    // Restore password and theme first
                     if (sys.password) localStorage.setItem('abar_password', sys.password);
                     if (sys.theme) localStorage.setItem('abar_theme', sys.theme);
-                    if (sys.github_token) localStorage.setItem('abar_github_token', sys.github_token);
-                    delete projs.__system__; // Remove system tag before merging to projects
+
+                    // Decrypt and restore GitHub Token safely
+                    if (sys.github_token && sys.password) {
+                        const decryptedToken = decrypt(sys.github_token, sys.password);
+                        localStorage.setItem('abar_github_token', decryptedToken);
+                    } else if (sys.github_token) {
+                        localStorage.setItem('abar_github_token', sys.github_token);
+                    }
+
+                    delete projs.__system__;
                 }
                 const local = getProjects();
                 Object.assign(local, projs);
                 saveProjects(local);
                 updateProjectDropdown();
-                // If token was synced, refresh UI might be needed, but usually just update the dropdown is fine
-                console.log('System settings synced from cloud.');
+                console.log('System settings safely synced and decrypted from cloud.');
             }
         } catch (e) { }
     }
@@ -159,11 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (token && token.trim()) {
                     // Wrap with system settings for cloud sync (keeps local clean)
+                    const pw = localStorage.getItem('abar_password');
+                    const rawToken = localStorage.getItem('abar_github_token');
+                    const encryptedToken = pw ? crypt(rawToken, pw) : rawToken;
+
                     const fullSyncData = {
                         __system__: {
-                            password: localStorage.getItem('abar_password'),
+                            password: pw,
                             theme: localStorage.getItem('abar_theme'),
-                            github_token: localStorage.getItem('abar_github_token')
+                            github_token: encryptedToken
                         },
                         ...projs
                     };
