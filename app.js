@@ -33,8 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function syncToCloud(projs) {
         try {
-            const res = await fetch(CLOUD_URL, {
+            const res = await fetch(`${CLOUD_URL}?t=${Date.now()}`, {
                 method: 'PUT',
+                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             return res.ok;
         } catch (e) {
+            console.error('Sync Error:', e);
             return false;
         }
     }
