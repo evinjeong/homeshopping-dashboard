@@ -104,10 +104,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (contentStr.charCodeAt(0) === 0xFEFF) contentStr = contentStr.substring(1);
             const projs = JSON.parse(contentStr);
             if (projs) {
+                // Settings Sync: Extract system settings if exists
+                if (projs.__system__) {
+                    const sys = projs.__system__;
+                    if (sys.password) localStorage.setItem('abar_password', sys.password);
+                    if (sys.theme) localStorage.setItem('abar_theme', sys.theme);
+                    if (sys.github_token) localStorage.setItem('abar_github_token', sys.github_token);
+                    delete projs.__system__; // Remove system tag before merging to projects
+                }
                 const local = getProjects();
                 Object.assign(local, projs);
                 saveProjects(local);
                 updateProjectDropdown();
+                // If token was synced, refresh UI might be needed, but usually just update the dropdown is fine
+                console.log('System settings synced from cloud.');
             }
         } catch (e) { }
     }
@@ -148,7 +158,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveProjects(projs);
 
                 if (token && token.trim()) {
-                    const success = await syncToCloud(projs, token.trim(), currentSha);
+                    // Wrap with system settings for cloud sync (keeps local clean)
+                    const fullSyncData = {
+                        __system__: {
+                            password: localStorage.getItem('abar_password'),
+                            theme: localStorage.getItem('abar_theme'),
+                            github_token: localStorage.getItem('abar_github_token')
+                        },
+                        ...projs
+                    };
+                    const success = await syncToCloud(fullSyncData, token.trim(), currentSha);
                     if (!success) {
                         alert(`로컬에는 저장되었으나 클라우드 동기화에 실패했습니다.\n(${window.lastErrorStatus}: ${window.lastErrorMessage})`);
                     } else {
