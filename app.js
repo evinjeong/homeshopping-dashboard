@@ -54,8 +54,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchPublicData() {
+        try {
+            const res = await fetch(`data/projects.json?t=${Date.now()}`, { cache: 'no-store' });
+            if (!res.ok) return;
+            const text = await res.text();
+            let contentStr = text;
+            if (contentStr.charCodeAt(0) === 0xFEFF) contentStr = contentStr.substring(1);
+            const projs = JSON.parse(contentStr);
+            const local = getProjects();
+            Object.assign(local, projs);
+            saveProjects(local);
+            updateProjectDropdown();
+        } catch (e) { }
+    }
+
     function init() {
-        // Auto-fetch if token exists on boot
         const token = localStorage.getItem('abar_github_token');
         if (token) {
             fetchFromGithub(token).then(data => {
@@ -64,6 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateProjectDropdown();
                 }
             });
+        } else {
+            fetchPublicData();
         }
 
         const urlParams = new URLSearchParams(window.location.search);
