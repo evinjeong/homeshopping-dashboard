@@ -21,37 +21,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const GITHUB_PATH = 'data/projects.json';
 
     async function fetchFromCloud(token) {
-        if (!token) return null;
         try {
-            const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}?t=${Date.now()}`, {
-                headers: {
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
+            // Use Raw URL for getting data - more reliable and simpler headers
+            const RAW_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${GITHUB_PATH}?t=${Date.now()}`;
+            const res = await fetch(RAW_URL, { cache: 'no-store' });
 
-            if (res.status === 404) {
-                return { sha: null, projs: {} };
+            // To get SHA for PUT, we still need the API, but let's try to get it separately
+            const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_PATH}?t=${Date.now()}`;
+            const apiRes = await fetch(API_URL);
+            let sha = null;
+            if (apiRes.ok) {
+                const apiData = await apiRes.json();
+                sha = apiData.sha;
             }
 
             if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                console.error('Fetch Failed:', res.status, errData);
+                if (res.status === 404) return { sha: null, projs: {} };
                 window.lastErrorStatus = res.status;
-                window.lastErrorMessage = `파일 정보 획득 실패: ${errData.message || '권한 부족'}`;
-                return null; // Fatal error
+                window.lastErrorMessage = "Raw 데이터 접근 실패";
+                return null;
             }
 
-            const data = await res.json();
-            const binary = atob(data.content);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-            let contentStr = new TextDecoder('utf-8').decode(bytes);
-            if (contentStr.charCodeAt(0) === 0xFEFF) contentStr = contentStr.substring(1);
-            return { sha: data.sha, projs: JSON.parse(contentStr) };
+            const contentStr = await res.text();
+            return { sha, projs: JSON.parse(contentStr) };
         } catch (e) {
             console.error('Fetch Error:', e);
-            window.lastErrorStatus = 'Network';
-            window.lastErrorMessage = e.message;
+            window.lastErrorStatus = 'Trace';
+            window.lastErrorMessage = `${e.name}: ${e.message}`;
             return null;
         }
     }
