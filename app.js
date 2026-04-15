@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         } catch (e) {
             console.error('Github Sync Error:', e);
+            window.lastErrorStatus = 'Network';
             window.lastErrorMessage = e.message;
             return false;
         }
